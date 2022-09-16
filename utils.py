@@ -21,22 +21,28 @@ def plot_datapoints(x, y):
                 edgecolors='black')
     plt.show()
 
-def plot_history(history, index='loss'):
-    epochs = np.arange(1, len(history['train_'+index])+1)
-    plt.plot(epochs, history['train_'+index], label='train_'+index)
-    plt.plot(epochs, history['test_'+index], label='test_'+index)
+def plot_history(history, labels, indices, kind='loss'):
+    epochs = np.arange(1, len(history[0]['train_'+kind])+1)
+    ax = plt.gca()
+    for i in indices:
+        c=next(ax._get_lines.prop_cycler)['color']
+        label_str = kind + " @ " + labels[i]
+        plt.plot(epochs, history[i]['train_'+kind], label='train_'+label_str,
+                color=c, linestyle=':')
+        plt.plot(epochs, history[i]['test_'+kind], label='test_'+label_str,
+                color=c, linestyle='-')
     plt.xlabel('epochs')
-    plt.ylabel(index)
+    plt.ylabel(kind)
     plt.legend()
     plt.show()
 
-def plot_sweep(x, histories, xlabel, index='loss'):
-    train_y = [h['train_'+index][-1] for h in histories]
-    test_y = [h['test_'+index][-1] for h in histories]
-    plt.plot(x, train_y, label='train_'+index)
-    plt.plot(x, test_y, label='test_'+index)
+def plot_sweep(x, histories, xlabel, kind='loss'):
+    train_y = [h['train_'+kind][-1] for h in histories]
+    test_y = [h['test_'+kind][-1] for h in histories]
+    plt.plot(x, train_y, label='train_'+kind)
+    plt.plot(x, test_y, label='test_'+kind)
     plt.xlabel(xlabel)
-    plt.ylabel(index)
+    plt.ylabel(kind)
     plt.legend()
     plt.show()
 

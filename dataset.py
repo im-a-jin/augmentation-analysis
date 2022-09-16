@@ -14,6 +14,8 @@ class XORMixture(Dataset):
         mu2 -= mu1.dot(mu2) * mu1 / np.linalg.norm(mu1)**2
         mu2 /= np.linalg.norm(mu2)
 
+        assert(abs(mu1.dot(mu2) < 1e-5))
+
         self.mu = np.array([mu1, -mu1, mu2, -mu2])
         self.var = var * np.eye(mu1.size)
         self.n = n
@@ -29,8 +31,8 @@ class XORMixture(Dataset):
         self.x = torch.Tensor(np.vstack(x))
         self.y = torch.Tensor(np.hstack((np.ones(self.n // 2),
                                         -np.ones(self.n // 2))))
-        noise_mask = 2 * (torch.rand(self.n) < 1 - self.noise_rate).int() - 1
-        self.y = self.y * noise_mask
+        self.noise_mask = 2 * (torch.rand(self.n) < 1 - self.noise_rate).int() - 1
+        self.y = self.y * self.noise_mask
 
         self._shuffle()
 
@@ -38,6 +40,7 @@ class XORMixture(Dataset):
         rand_idx = torch.randperm(self.n)
         self.x = self.x[rand_idx, :]
         self.y = self.y[rand_idx]
+        self.noise_mask = self.noise_mask[rand_idx]
 
     def __getitem__(self, index):
         return self.x[index, :], self.y[index]

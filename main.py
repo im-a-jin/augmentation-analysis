@@ -1,13 +1,13 @@
 import os
 import sys
 
-from absl import app, flags
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from tqdm import tqdm
 
+from parameter import Parameters, parse_parameters
 from dataset import XORMixture
 from model import NonlinearModel
 import trainer
@@ -15,58 +15,68 @@ import utils
 
 np.set_printoptions(threshold=sys.maxsize)
 torch.set_printoptions(edgeitems=10000)
+        
+PARAMETERS = {
+    'd': 128,
+    'm': 500,
+    'n': 5000,
+    'noise_rate': 0.15,
+    'lr': 5.0,
+    'epochs': 500,
+    'p': 0.0,
+    'cluster_var': 1/25,
+    'init_var': 1/16,
+    'seed': 0,
+    'plt_idx': [0, -1],
+    'test_all': False,
+}
 
-FLAGS = flags.FLAGS
 
-flags.DEFINE_integer('d', 128, 'input dimensions')
-flags.DEFINE_integer('m', 50, 'hidden dimensions')
-flags.DEFINE_integer('n', 5000, 'number of samples')
+def main():
+    PARAMS = parse_parameters(sys.argv, PARAMETERS)
 
-flags.DEFINE_float('noise_rate', 0.15, 'probability of false labeling')
-
-flags.DEFINE_float('lr', 0.05, 'gradient descent learning rate')
-flags.DEFINE_integer('epochs', 300, 'number of training epochs') 
-flags.DEFINE_integer('batch_size', 0, 'batch size')
-flags.DEFINE_float('p', 0.5, 'dropout probability')
-
-flags.DEFINE_integer('seed', 0, 'random seed')
-
-def main(argv):
-    utils.set_random_seeds(FLAGS.seed)
+    utils.set_random_seeds(PARAMS.seed)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     dataset = XORMixture(
-            dims=FLAGS.d,
-            var=1/(25*FLAGS.d),
-            n=FLAGS.n,
-            noise_rate=FLAGS.noise_rate,
+            dims=PARAMS.d,
+            var=PARAMS.cluster_var*1/PARAMS.d,
+            n=PARAMS.n,
+            noise_rate=PARAMS.noise_rate,
 #           mu=[0.0, 1.0],
     )
 
 #   utils.plot_datapoints(dataset.x, dataset.y)
 
-    models, histories = [], []
-    for p in np.arange(0.0, FLAGS.p, 0.1):
-        dataset._shuffle()
-        transforms = nn.Dropout(p=p)
+    models, histories, labels = [], [], []
+    for params in PARAMS:
+#       dataset._shuffle()
+        if type(PARAMS[PARAMS.sweep]) is float:
+            PARAMS[PARAMS.sweep] = np.around(PARAMS[PARAMS.sweep], 6)
+        print(params)
+
+        transforms = nn.Dropout(p=params.p)
         model = NonlinearModel(
-                in_dim=FLAGS.d,
-                hidden_dim=FLAGS.m,
+                in_dim=params.d,
+                hidden_dim=params.m,
                 out_dim=1,
-                init_var=1/(16*FLAGS.m*FLAGS.d),
+                init_var=params.init_var*1/(params.m*params.d),
         )
         model.to(device)
-        m, h = trainer.train(model, dataset, transforms, FLAGS.lr, FLAGS.epochs,
-            device)
+        m, h = trainer.train(model, dataset, transforms, params.epochs,
+                params.lr, device, test_all=params.test_all)
         models.append(m)
         histories.append(h)
+        labels.append(PARAMS.sweep + "=" + str(PARAMS[PARAMS.sweep]))
 
-    utils.plot_sweep(np.arange(0.0, FLAGS.p, 0.1), histories, 'p', 'loss')
-    utils.plot_sweep(np.arange(0.0, FLAGS.p, 0.1), histories, 'p', 'acc')
-    utils.plot_history(histories[0], 'cca')
-    utils.plot_history(histories[-1], 'cca')
+    utils.plot_sweep(PARAMS.sweep_range(), histories, xlabel=PARAMS.sweep,
+            kind='loss')
+    utils.plot_sweep(PARAMS.sweep_range(), histories, xlabel=PARAMS.sweep,
+            kind='acc')
+    utils.plot_history(histories, labels, PARAMS.plt_idx, kind='loss')
+    utils.plot_history(histories, labels, PARAMS.plt_idx, kind='acc')
 #   utils.plot_datapoints(dataset.x, torch.sign(m(dataset.x).squeeze()))
 
 if __name__ == "__main__":
-    app.run(main)
+    main()
