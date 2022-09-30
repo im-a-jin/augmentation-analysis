@@ -2,8 +2,30 @@ import numpy as np
 import torch
 import torch.nn as nn
 from tqdm import tqdm
+from model import NonlinearModel
 
-def train(model, dataset, transforms, epochs, lr, device, test_all=False):
+def sweep(dataset, device, params, sweep, index=0):
+    if index == len(sweep):
+        # TODO: update dropout transform
+        transforms = nn.Dropout(p=params.p)
+        model = NonlinearModel(
+                in_dim = params.d,
+                hidden_dim=params.m,
+                out_dim=1,
+                init_var=parrams.init_var*1/(params.m*params.d),
+        )
+        m, h = train(model, dataset, transforms, params.epochs, params.lr,
+                params.test_all, device)
+        return m, h
+    else:
+        params.set_sweep(*sweep[index])
+        for p in params:
+            sweep(dataset, device, p, sweep, index+1)
+        # TODO: figure out model/history aggregating
+        # return tensor?
+                    
+
+def train(model, dataset, transforms, epochs, lr, test_all, device):
     history = {
             'train_loss': [], 'train_acc': [],
             'test_loss': [], 'test_acc': [],
@@ -43,12 +65,5 @@ def train(model, dataset, transforms, epochs, lr, device, test_all=False):
         history['train_acc'].append(acc.item())
         history['test_loss'].append(test_loss.item())
         history['test_acc'].append(test_acc.item())
-
-#   print(torch.vstack((test_y, test_y_, test_pred)).T)
-
-#   print('train loss =', history['train_loss'][-1])
-#   print('test loss =', history['test_loss'][-1])
-#   print('train acc =', history['train_acc'][-1])
-#   print('test acc =', history['test_acc'][-1])
 
     return model, history

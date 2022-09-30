@@ -1,5 +1,6 @@
 import numpy as np
 import argparse
+import copy
 
 def parse_parameters(args, default):
     parser = argparse.ArgumentParser()
@@ -15,7 +16,7 @@ def parse_parameters(args, default):
         else:
             parser.add_argument('--'+p, type=type(default[p]), metavar='')
 
-    parser.add_argument('--sweep', nargs=4, metavar='', 
+    parser.add_argument('--sweep', nargs=4, action='append', metavar='', 
         help='param start stop step')
 
     parsed_args, _ = parser.parse_known_args(args[1:])
@@ -26,14 +27,14 @@ def parse_parameters(args, default):
         if p in default and parsed_args[p] is not None:
             params[p] = parsed_args[p]
 
-    sweep = parsed_args['sweep']
-    if sweep is not None:
-        t = type(default[sweep[0]])
-        for i in range(1, len(sweep)):
-            sweep[i] = t(sweep[i])
-        params.set_sweep(*parsed_args['sweep'])
+    sweeps = parsed_args['sweep']
+    if sweeps is not None:
+        for i in range(len(sweeps)):
+            t = type(default[sweeps[i][0]])
+            for j in range(1, len(sweeps[i])):
+                sweeps[i][j] = t(sweeps[i][j])
 
-    return params
+    return params, sweeps
 
 class Parameters:
     def __init__(self, params):
@@ -41,13 +42,14 @@ class Parameters:
         self.sweep = None
         self.default = None
         self.stopiter = False
-        self.start, self.stop, self.step = 0, 1, 1
+        self.start, self.stop, self.step = 0, 0, 1
 
     def __iter__(self):
-        return self
+        return copy.deepcopy(self)
 
     def __next__(self):
         if self.stopiter:
+            self.params[self.sweep] = self.default
             raise StopIteration
         if self.sweep is None:
             self.stopiter = True
@@ -58,8 +60,6 @@ class Parameters:
         return self
 
     def set_sweep(self, name, start, stop, step):
-        if self.sweep is not None:
-            self.params[self.sweep] = self.default
         if name not in self.params.keys():
             raise RuntimeError(name + ' is not a parameter.')
         self.sweep = name
@@ -78,9 +78,10 @@ class Parameters:
         return np.linspace(self.start, self.stop, num)
 
     def __getattr__(self, name):
-        if str(name) not in self.params.keys():
+        try:
+            return super().__getattribute__('params')[str(name)]
+        except KeyError:
             raise AttributeError(str(name) + ' is not a parameter.')
-        return self.params[str(name)]
 
     def __getitem__(self, key):
         if key not in self.params.keys():

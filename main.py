@@ -26,6 +26,7 @@ PARAMETERS = {
     'p': 0.0,
     'cluster_var': 1/25,
     'init_var': 1/16,
+    'mu': None,
     'seed': 0,
     'plt_idx': [0, -1],
     'test_all': False,
@@ -33,7 +34,7 @@ PARAMETERS = {
 
 
 def main():
-    PARAMS = parse_parameters(sys.argv, PARAMETERS)
+    PARAMS, SWEEPS = parse_parameters(sys.argv, PARAMETERS)
 
     utils.set_random_seeds(PARAMS.seed)
 
@@ -44,16 +45,17 @@ def main():
             var=PARAMS.cluster_var*1/PARAMS.d,
             n=PARAMS.n,
             noise_rate=PARAMS.noise_rate,
-#           mu=[0.0, 1.0],
+            mu=PARAMS.mu,
     )
 
 #   utils.plot_datapoints(dataset.x, dataset.y)
 
+    print(PARAMS, SWEEPS)
     models, histories, labels = [], [], []
     for params in PARAMS:
 #       dataset._shuffle()
-        if type(PARAMS[PARAMS.sweep]) is float:
-            PARAMS[PARAMS.sweep] = np.around(PARAMS[PARAMS.sweep], 6)
+#       if type(PARAMS[PARAMS.sweep]) is float:
+#           PARAMS[PARAMS.sweep] = np.around(PARAMS[PARAMS.sweep], 6)
         print(params)
 
         transforms = nn.Dropout(p=params.p)
@@ -65,10 +67,10 @@ def main():
         )
         model.to(device)
         m, h = trainer.train(model, dataset, transforms, params.epochs,
-                params.lr, device, test_all=params.test_all)
+                params.lr, params.test_all, device)
         models.append(m)
         histories.append(h)
-        labels.append(PARAMS.sweep + "=" + str(PARAMS[PARAMS.sweep]))
+#       labels.append(PARAMS.sweep + "=" + str(PARAMS[PARAMS.sweep]))
 
     utils.plot_sweep(PARAMS.sweep_range(), histories, xlabel=PARAMS.sweep,
             kind='loss')
