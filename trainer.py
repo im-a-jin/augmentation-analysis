@@ -44,11 +44,7 @@ def train(model, dataset, transforms, epochs, lr, device, test_all=False):
         history['test_loss'].append(test_loss.item())
         history['test_acc'].append(test_acc.item())
 
-#   print(torch.vstack((test_y, test_y_, test_pred)).T)
-
-#   print('train loss =', history['train_loss'][-1])
-#   print('test loss =', history['test_loss'][-1])
-#   print('train acc =', history['train_acc'][-1])
-#   print('test acc =', history['test_acc'][-1])
+    for k in history.keys():
+        history[k] = torch.Tensor(history[k])
 
     return model, history

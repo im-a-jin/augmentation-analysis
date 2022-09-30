@@ -55,7 +55,7 @@ class Parameters:
             self.params[self.sweep] = self._next
             self._next += self.step
             self.stopiter = self._next > self.stop
-        return self
+        return Parameters(self.params)
 
     def set_sweep(self, name, start, stop, step):
         if self.sweep is not None:

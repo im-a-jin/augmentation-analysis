@@ -27,10 +27,12 @@ PARAMETERS = {
     'cluster_var': 1/25,
     'init_var': 1/16,
     'seed': 0,
-    'plt_idx': [0, -1],
+#   'plt_idx': [0, -1],
     'test_all': False,
+    'filename': "out.log",
 }
 
+# TODO: do averaging analysis in jupyterlab
 
 def main():
     PARAMS = parse_parameters(sys.argv, PARAMETERS)
@@ -49,10 +51,10 @@ def main():
 
 #   utils.plot_datapoints(dataset.x, dataset.y)
 
-    models, histories, labels = [], [], []
+    models, params, histories, labels = [], [], [], []
     for params in PARAMS:
 #       dataset._shuffle()
-        if type(PARAMS[PARAMS.sweep]) is float:
+        if PARAMS.sweep is not None and type(PARAMS[PARAMS.sweep]) is float:
             PARAMS[PARAMS.sweep] = np.around(PARAMS[PARAMS.sweep], 6)
         print(params)
 
@@ -66,17 +68,11 @@ def main():
         model.to(device)
         m, h = trainer.train(model, dataset, transforms, params.epochs,
                 params.lr, device, test_all=params.test_all)
-        models.append(m)
+#       models.append(m)
         histories.append(h)
-        labels.append(PARAMS.sweep + "=" + str(PARAMS[PARAMS.sweep]))
+#       labels.append(PARAMS.sweep + "=" + str(PARAMS[PARAMS.sweep]))
 
-    utils.plot_sweep(PARAMS.sweep_range(), histories, xlabel=PARAMS.sweep,
-            kind='loss')
-    utils.plot_sweep(PARAMS.sweep_range(), histories, xlabel=PARAMS.sweep,
-            kind='acc')
-    utils.plot_history(histories, labels, PARAMS.plt_idx, kind='loss')
-    utils.plot_history(histories, labels, PARAMS.plt_idx, kind='acc')
-#   utils.plot_datapoints(dataset.x, torch.sign(m(dataset.x).squeeze()))
+    torch.save(histories, "outputs/metrics/" + PARAMS.filename)
 
 if __name__ == "__main__":
     main()
