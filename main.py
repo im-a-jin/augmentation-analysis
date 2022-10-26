@@ -43,7 +43,7 @@ def main():
 
     dataset = XORMixture(
             dims=PARAMS.d,
-            var=PARAMS.cluster_var*1/PARAMS.d,
+            var=PARAMS.cluster_var,
             n=PARAMS.n,
             noise_rate=PARAMS.noise_rate,
 #           mu=[0.0, 1.0],
@@ -63,7 +63,7 @@ def main():
                 in_dim=params.d,
                 hidden_dim=params.m,
                 out_dim=1,
-                init_var=params.init_var*1/(params.m*params.d),
+                init_var=params.init_var,
         )
         model.to(device)
         m, h = trainer.train(model, dataset, transforms, params.epochs,

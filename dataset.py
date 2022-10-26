@@ -17,7 +17,11 @@ class XORMixture(Dataset):
         assert(abs(mu1.dot(mu2) < 1e-5))
 
         self.mu = np.array([mu1, -mu1, mu2, -mu2])
-        self.var = var * np.eye(mu1.size)
+        if type(var) is float:
+            self.var = var * np.eye(mu1.size)
+        else:
+            assert len(var)==dims, "Incomplete variance list"
+            self.var = np.diag(var)
         self.n = n
         self.noise_rate = noise_rate
         
@@ -33,8 +37,6 @@ class XORMixture(Dataset):
                                         -np.ones(self.n // 2))))
         self.noise_mask = 2 * (torch.rand(self.n) < 1 - self.noise_rate).int() - 1
         self.y = self.y * self.noise_mask
-
-        self._shuffle()
 
     def _shuffle(self):
         rand_idx = torch.randperm(self.n)

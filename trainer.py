@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 
-def train(model, dataset, transforms, epochs, lr, device, test_all=False):
+def train(model, dataset, transforms, epochs, lr, device, test_all=False, leave=True):
     history = {
             'train_loss': [], 'train_acc': [],
             'test_loss': [], 'test_acc': [],
@@ -17,10 +17,12 @@ def train(model, dataset, transforms, epochs, lr, device, test_all=False):
     test_x, test_y = test_x.to(device), test_y.to(device)
     test_x = test_x[np.argwhere(test_mask==1)]
     test_y = test_y[np.argwhere(test_mask==1)]
-    for epoch in tqdm(range(1, epochs+1)):
+    for epoch in tqdm(range(1, epochs+1), leave=leave):
         x, y = dataset[:split]
         x, y = x.to(device), y.to(device)
-        y_ = model(transforms(x)).squeeze()
+        if transforms is not None:
+            x = transforms(x)
+        y_ = model(x).squeeze()
         
         loss = torch.mean(torch.log(1 + torch.exp(-y*y_)))
         pred = torch.sign(y_)

@@ -48,6 +48,7 @@ class Parameters:
 
     def __next__(self):
         if self.stopiter:
+            self.stopiter = False
             raise StopIteration
         if self.sweep is None:
             self.stopiter = True
@@ -70,6 +71,7 @@ class Parameters:
         self.reset_sweep()
 
     def reset_sweep(self):
+        self.stopiter = False
         self.params[self.sweep] = self.start
         self._next = self.start
 
